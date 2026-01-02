@@ -1,0 +1,173 @@
+---
+title: "Final Project"
+author: "Mina Pham"
+date: "2024-12-10"
+output:
+  html_document:
+    toc: true
+    theme: united
+bibliography: finalproject.bib
+nocite: '@*'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+twitch <- read.csv('twitchdata-update.csv')
+library(tidyverse)
+```
+
+<center>
+![twitch](twitchlogo.png){width=50%}
+</center>
+
+# Abstract
+Twitch is one of the leading platforms for live streaming and has become a prime avenue for content creators seeking audience growth and monetization. This study analyzes data from the top Twitch streamers of 2020 to uncover factors influencing success, focusing on metrics like watch time, stream time, peak viewers, average viewers, followers gained, viewers gained, and channel characteristics like Twitch Partner status and 18+ content. Using scatter plots, ANOVA, and multiple linear regression, the analysis identifies trends and key predictors of follower gain. ANOVA tests assess differences in continuous metrics across partnered and 18+ channels, while regression models explore the combined impact of continuous and categorical variables on follower growth. The findings provide insights into the importance of audience engagement, with watch time and average viewers being the most significant predictors of follower growth. These results offer suggestions for streamers to better understand the factors driving success on Twitch.
+
+# Introduction
+The gaming industry has grown into a massive community, with millions of dollars invested annually into esports and gaming related activity. As the platform continues to grow, streamers face increasing competition for viewership and follower engagement, making it essential to understand what factors contribute to success. More companies are looking to capitalize on this thriving scene and many streamers are looking at Twitch as a very appealing option to make money through content creation. This analysis aims to uncover trends, patterns, and relationships within certain platform statistics in order to provide insight into what makes a Twitch streamer successful. By analyzing data on top Twitch streamers, this research aims to provide a deeper understanding of the dynamics within the streaming industry.
+
+The end goal would be to test for trends and correlation as well as using statistical techniques to uncover meaningful insights into Twitch performance metrics to determine which factors most influence follower gain. In order to understand distributions, I plan on showing scatter plots that visualize the relationships between followers gained and continuous variables such as watch time, stream time, peak viewers, average viewers. These visualizations provide a clear representation of potential trends and correlations within the data. Using ANOVA I plan to test if there are significant differences in the 4 continuous variables between streamers that are Twitch partnered vs. non-partnered channels or 18+ vs. non-18+. This data is critical to understanding how Twitch’s structural features, like partnership status and mature content, impact a channel's performance. Using multiple linear regression I can use these the 4 continuous variables and the 2 categorical variables as multiple predictors in order to identify the strongest predictors of follower gain. This approach provides a comprehensive understanding of how different factors collectively drive growth.
+
+# Data
+This study utilizes the "Top Twitch Streamers of 2020" csv dataset found on [kaggle](https://www.kaggle.com/datasets/aayushmishra1512/twitchdata/data), which provides detailed performance metrics for successful Twitch channels. This dataset offers a comprehensive view of the factors influencing streamer growth and audience engagement, making it a valuable resource for understanding the dynamics of success on the platform. It focuses exclusively on the top performing Twitch channels of 2020, representing a high quality sample of creators who have achieved reputable success. By targeting the top streamers, the dataset highlights key characteristics and trends among influential channels, providing insights into factors that contribute to broad audience engagement. However, the datasets focus on top tier channels limits its applicability to smaller or emerging streamers. And since the data is slightly outdated, with results from 2020, it may not account for seasonal trends or long-term shifts in streaming success. External factors, such as game-specific popularity, sponsorship deals, or changes in Twitch’s policies, are not represented but could significantly influence growth metrics. Despite these limitations, the dataset offers a valuable foundation for identifying core factors associated with success in the competitive streaming industry.
+
+Below I have listed the included columns in the data set. 
+Streaming Metrics: Watch time (minutes), Stream time (minutes), Peak viewers, and Average viewers provide insights into the scale of streaming activity and how audiences engage with streams.
+Follower Growth: Followers, Followers gained, and Views gained reflect the popularity and growth trajectory of each channel.
+Channel Characteristics: Whether the streamer is a Twitch Partner and whether the channel is flagged as 18+.
+
+# Analysis and Results
+
+## Scatter Plots
+
+### Watch Time vs. Followers Gained 
+```{r wt.fg}
+ggplot(twitch, aes(x = `Watch.time.Minutes.`, y = `Followers.gained`)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +
+  labs(title = "Watch Time vs. Followers Gained", x = "Watch Time (minutes)", y = "Followers Gained")
+
+```
+
+### Stream Time vs. Followers Gained
+```{r st.fg}
+ggplot(twitch, aes(x = `Stream.time.minutes.`, y = `Followers.gained`)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +
+  labs(title = "Stream Time vs. Followers Gained", x = "Stream Time (minutes)", y = "Followers Gained")
+
+```
+
+### Peak Viewers vs. Followers Gained
+```{r pv.fg}
+ggplot(twitch, aes(x = `Peak.viewers`, y = `Followers.gained`)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +
+  labs(title = "Peak Viewers vs. Followers Gained", x = "Peak Viewers", y = "Followers Gained")
+
+```
+
+### Average Viewers vs. Followers Gained
+```{r av.fg}
+ggplot(twitch, aes(x = `Average.viewers`, y = `Followers.gained`)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +
+  labs(title = "Average Viewers vs. Followers Gained", x = "Average Viewers", y = "Followers Gained")
+
+```
+
+## ANOVA
+```{r an.pa}
+twitch$`Partnered` <- as.factor(twitch$`Partnered`)
+
+variables <- c("Watch.time.Minutes.", "Stream.time.minutes.", "Peak.viewers", "Average.viewers")
+
+for (var in variables) {
+  Partnered <- aov(as.formula(paste(var, "~ `Partnered`")), data = twitch)
+  cat("\nANOVA for", var, "\n")
+  print(summary(Partnered))
+}
+
+twitch_long <- tidyr::pivot_longer(twitch, cols = c("Watch.time.Minutes.", "Stream.time.minutes.", "Peak.viewers", "Average.viewers", "Followers.gained"), names_to = "Metric", values_to = "Value")
+
+ggplot(twitch_long, aes(x = `Partnered`, y = Value, fill = `Partnered`)) +
+  geom_boxplot(alpha = 0.7, outlier.color = "red") +
+  facet_wrap(~ Metric, scales = "free_y") +
+  labs(
+    title = "Comparison of Metrics by Twitch Partner Status",
+    x = "Partnered",
+    y = "Value"
+  ) +
+  theme_minimal() +
+  scale_fill_manual(values = c("#00AFBB", "#E7B800"))
+
+```
+
+Because the p=values for all the listed variables were large, this means there is not enough evidence to be statistically significant at the significance level of \(\alpha=0.05\). Twitch partner status does not have a statistically significant effect on any of the tested variables which suggests that whether a streamer is a Twitch partner or not does not explain differences in watch time, stream time, peak viewers, or average viewers.
+
+```{r an.ma}
+twitch$`Mature` <- as.factor(twitch$`Mature`)
+
+for (var in variables) {
+  Mature <- aov(as.formula(paste(var, "~ `Mature`")), data = twitch)
+  cat("\nANOVA for", var, "\n")
+  print(summary(Mature))
+}
+
+ggplot(twitch_long, aes(x = `Mature`, y = Value, fill = `Mature`)) +
+  geom_boxplot(alpha = 0.7, outlier.color = "red") +
+  facet_wrap(~ Metric, scales = "free_y") +
+  labs(
+    title = "Comparison of Metrics by Mature (18+) Status",
+    x = "Mature (18+)",
+    y = "Value"
+  ) +
+  theme_minimal() +
+  scale_fill_manual(values = c("#0073C2FF", "#EFC000FF"))
+
+```
+
+While the p=values of watch time and stream time were too large to be significant, the p-values of peak viewers and average viewers are sigificant at p < 0.01 which indicates that the Mature status of a channel significantly affects both peak viewers and average viewers. Channels flagged as 18+ have different viewer patterns compared to non-18+ channels.
+
+## Multiple Linear Regression
+```{r mlr}
+model <- lm(`Followers.gained` ~ `Watch.time.Minutes.` + `Stream.time.minutes.` + 
+                               `Average.viewers` + `Views.gained` + 
+                               `Partnered` + `Mature`, data = twitch)
+summary(model)
+
+```
+
+With the dependent variable being followers gained and the included independent variables being watch time, stream time, average viewers, views gained, partnership status, and mature status, we are able to note some key values through multiple linear regression. 
+
+* Multiple R-squared: 0.3404 Indicates that about 34% of the variability in followers gained is explained by the predictors in the model.
+* Adjusted R-squared: 0.3364 Indicates that after being adjusted for the number of predictors, still suggests the model explains 33% of the variance.
+* F-statistic: 85.4 
+* p-value < 2.2e-16 Indicates the overall model is statistically significant.
+
+Significant Predictors:
+
+* Watch time (minutes): A positive and significant predictor of followers gained. For every additional minute of watch time, followers gained increases by 0.000308 on average.
+
+* Stream time (minutes): A significant negative predictor of followers gained. More stream time correlates with a decrease of −0.7649 in followers gained.
+
+* Average viewers: A positive and significant predictor of followers gained. An increase in average viewers strongly relates to more followers gained.
+
+* Mature Ratings: Channels flagged as 18+ have significantly fewer followers gained, with an estimated effect of -44,740 followers.
+
+Non-Significant Predictors:
+
+* Views gained: This variable is not statistically significant, suggesting it doesn't explain much variance in followers gained.
+
+* Twitch Partner status: Being a Twitch partner does not significantly impact followers gained.
+
+Overall the model is statistically significant, but with an R-squared of ~34%, there is room for improvement.
+
+# Conclusion
+The primary objective of this analysis was to uncover the key factors driving success among Twitch streamers by examining relationships between performance metrics, audience engagement, and channel characteristics. Specifically, the study sought to determine which variables most influence follower growth, a critical indicator of streamer popularity and potential monetization. The analysis utilized a dataset comprising top Twitch streamers of 2020, focusing on metrics such as watch time, stream time, peak viewers, average viewers, followers gained, and categorical variables like partnership status and mature content status.
+
+To achieve these objectives, I utilized a combination of visualizations, statistical tests, and regression modeling. Scatter plots were used to identify trends and correlations between followers gained and continuous variables, revealing potential linear relationships. ANOVA tests assessed whether significant differences existed in key performance metrics between partnered and non-partnered channels, as well as between 18+ and non-18+ channels. These tests demonstrated that Twitch partnership and mature content had limited direct impact on continuous performance metrics but highlighted subtle differences in engagement patterns. Finally, a multiple linear regression model incorporated both continuous and categorical variables to predict follower growth, identifying watch time and average viewers as the strongest predictors.
+
+The results of this study provide actionable insights for streamers aiming to optimize their growth strategies. Building an engaged audience, as indicated by high average and peak viewer counts, appears to be a critical driver of follower growth. Being aware of all these factors and trying to prioritize certain ones in order to enlarge a platform should be something more streamers need to consider. Future research could expand this analysis by incorporating additional variables such as specific game categories, streaming frequency, or engagement metrics like chat activity. Furthermore, examining time-series data would provide insights into how streaming success evolves over time, offering a more dynamic understanding of the Twitch ecosystem.
+
+# Works Cited
